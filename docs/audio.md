@@ -61,8 +61,10 @@ container **as that user** and mount the bus:
 
 Trade-off: as a non-root uid the container **can't read RAPL** (`energy_uj` is
 root-only since CVE-2020-8694), so CPU-package power drops on that host. On an
-audio box that's usually the right call (MPRIS + volume > CPU watts). Running
-linux2mqtt directly on the host (not containerised) avoids the conflict entirely.
+audio box that's usually the right call (MPRIS + volume > CPU watts). To keep
+*both*, make RAPL readable via a host udev rule (see
+[components.md → Reading RAPL as non-root](components.md#reading-rapl-as-non-root-containers--uid-mapped)).
+Running linux2mqtt directly on the host (not containerised) also avoids the conflict.
 
 Note: only players that expose `org.mpris.MediaPlayer2` appear — DLNA renderers
 (e.g. gmediarender) and Music Assistant's server do not; MA exposes its players

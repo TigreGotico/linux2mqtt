@@ -22,6 +22,22 @@ entity is simply omitted rather than faked. RAPL measures the *package*, not the
 whole device — which is exactly why it's a component here and **not** the
 total-power source.
 
+### Reading RAPL as non-root (containers / uid-mapped)
+
+Since CVE-2020-8694, `energy_uj` is `0400 root`. A container run as a non-root uid
+(e.g. to reach the user D-Bus session bus for [MPRIS](audio.md)) can't read it, so
+`cpu_power` drops. To expose it persistently, add a udev rule on the **host**:
+
+```bash
+echo 'SUBSYSTEM=="powercap", ACTION=="add", RUN+="/bin/chmod -R a+r /sys/class/powercap/%k"' \
+  | sudo tee /etc/udev/rules.d/99-rapl.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger --subsystem-match=powercap
+```
+
+(or a one-shot systemd service running `chmod -R a+r /sys/class/powercap/intel-rapl:*`).
+This re-exposes the RAPL power side-channel to local users — fine on a trusted
+host. Restart the container afterwards so it re-detects RAPL.
+
 ## GPU (NVIDIA)
 
 Auto-detected via `nvidia-smi` (`USE_GPU=true`, `GPU_INDEX=0`):
