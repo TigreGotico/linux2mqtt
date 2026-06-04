@@ -1,0 +1,183 @@
+# linux2mqtt — Home Assistant Lovelace dashboard
+#
+# Entity ids follow `<domain>.<device_name_slug>_<key>`. This example uses the
+# slug `ha_pi4` (DEVICE_NAME "HA Pi4"). If your DEVICE_NAME differs, find/replace
+# `ha_pi4` with your slug. Cards referencing optional components (GPU, Pi, audio,
+# MPRIS) can be removed if you don't have them.
+#
+# Add via Settings → Dashboards → New dashboard → Edit → Raw configuration editor,
+# or drop under `views:` in an existing dashboard.
+
+title: linux2mqtt
+views:
+  - title: Power
+    path: power
+    icon: mdi:flash
+    cards:
+      - type: gauge
+        name: Power
+        entity: sensor.ha_pi4_power
+        unit: W
+        needle: true
+        severity: {green: 0, yellow: 30, red: 80}
+      - type: entities
+        title: Power detail
+        entities:
+          - entity: sensor.ha_pi4_power
+          - entity: sensor.ha_pi4_source
+          - entity: sensor.ha_pi4_error_margin
+          - entity: sensor.ha_pi4_power_floor
+          - entity: sensor.ha_pi4_power_ceiling
+          - entity: sensor.ha_pi4_energy
+          - entity: sensor.ha_pi4_cost
+          - entity: sensor.ha_pi4_model
+      - type: history-graph
+        title: Power & envelope (24h)
+        hours_to_show: 24
+        entities:
+          - sensor.ha_pi4_power
+          - sensor.ha_pi4_power_floor
+          - sensor.ha_pi4_power_ceiling
+      - type: statistics-graph
+        title: Energy
+        chart_type: bar
+        period: hour
+        stat_types: [state]
+        entities: [sensor.ha_pi4_energy]
+
+  - title: System
+    path: system
+    icon: mdi:chip
+    cards:
+      - type: glance
+        title: Host
+        entities:
+          - entity: sensor.ha_pi4_uptime
+          - entity: sensor.ha_pi4_ip_address
+          - entity: sensor.ha_pi4_cpu_cores
+          - entity: sensor.ha_pi4_operating_system
+          - entity: sensor.ha_pi4_architecture
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            name: CPU
+            entity: sensor.ha_pi4_cpu_utilization
+            unit: "%"
+            severity: {green: 0, yellow: 60, red: 90}
+          - type: gauge
+            name: RAM
+            entity: sensor.ha_pi4_ram_usage
+            unit: "%"
+            severity: {green: 0, yellow: 70, red: 90}
+          - type: gauge
+            name: Disk
+            entity: sensor.ha_pi4_disk_host_usage
+            unit: "%"
+            severity: {green: 0, yellow: 75, red: 90}
+      - type: entities
+        title: Load & memory
+        entities:
+          - entity: sensor.ha_pi4_load_1m
+          - entity: sensor.ha_pi4_load_5m
+          - entity: sensor.ha_pi4_load_15m
+          - entity: sensor.ha_pi4_ram_used
+          - entity: sensor.ha_pi4_swap_usage
+          - entity: sensor.ha_pi4_disk_host_free
+      - type: history-graph
+        title: Throughput (kB/s)
+        hours_to_show: 6
+        entities:
+          - sensor.ha_pi4_network_up
+          - sensor.ha_pi4_network_down
+          - sensor.ha_pi4_disk_read
+          - sensor.ha_pi4_disk_write
+      - type: entities
+        title: Services
+        entities:
+          - binary_sensor.ha_pi4_sshd_running
+          - binary_sensor.ha_pi4_dockerd_running
+          - binary_sensor.ha_pi4_mosquitto_running
+
+  - title: CPU / GPU
+    path: cpu-gpu
+    icon: mdi:cpu-64-bit
+    cards:
+      - type: entities
+        title: CPU
+        entities:
+          - entity: sensor.ha_pi4_cpu_utilization
+          - entity: sensor.ha_pi4_cpu_frequency
+          - entity: sensor.ha_pi4_cpu_temperature
+          - entity: sensor.ha_pi4_cpu_power
+      - type: gauge
+        name: CPU temperature
+        entity: sensor.ha_pi4_cpu_temperature
+        unit: °C
+        severity: {green: 0, yellow: 70, red: 80}
+      - type: entities
+        title: GPU (if present)
+        entities:
+          - entity: sensor.ha_pi4_gpu_utilization
+          - entity: sensor.ha_pi4_gpu_temperature
+          - entity: sensor.ha_pi4_gpu_memory
+          - entity: sensor.ha_pi4_gpu_power
+
+  - title: Raspberry Pi
+    path: rpi
+    icon: mdi:raspberry-pi
+    cards:
+      - type: entities
+        title: Health
+        entities:
+          - entity: binary_sensor.ha_pi4_undervoltage
+          - entity: binary_sensor.ha_pi4_throttled
+          - entity: binary_sensor.ha_pi4_frequency_capped
+          - entity: binary_sensor.ha_pi4_overheating
+          - entity: binary_sensor.ha_pi4_overclocked
+      - type: entities
+        title: History (since boot)
+        entities:
+          - entity: binary_sensor.ha_pi4_undervoltage_occurred
+          - entity: binary_sensor.ha_pi4_throttling_occurred
+          - entity: binary_sensor.ha_pi4_overheating_occurred
+      - type: entities
+        title: Clocks & voltage
+        entities:
+          - entity: sensor.ha_pi4_arm_clock
+          - entity: sensor.ha_pi4_configured_arm_freq
+          - entity: sensor.ha_pi4_core_voltage
+          - entity: sensor.ha_pi4_over_voltage
+
+  - title: Audio
+    path: audio
+    icon: mdi:volume-high
+    cards:
+      - type: entities
+        title: Audio (if an audio server is running)
+        entities:
+          - entity: sensor.ha_pi4_audio_server
+          - entity: number.ha_pi4_volume
+          - entity: switch.ha_pi4_mute
+          - entity: number.ha_pi4_mic_volume
+          - entity: switch.ha_pi4_mic_mute
+      - type: entities
+        title: Now playing (MPRIS)
+        entities:
+          - entity: sensor.ha_pi4_media_status
+          - entity: sensor.ha_pi4_media_title
+          - entity: sensor.ha_pi4_media_artist
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: Previous
+            icon: mdi:skip-previous
+            tap_action: {action: toggle}
+            entity: button.ha_pi4_media_previous
+          - type: button
+            name: Play/Pause
+            icon: mdi:play-pause
+            entity: button.ha_pi4_media_play_pause
+          - type: button
+            name: Next
+            icon: mdi:skip-next
+            entity: button.ha_pi4_media_next

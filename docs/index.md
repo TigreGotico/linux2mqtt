@@ -12,6 +12,9 @@ library; this project adds the telemetry and the MQTT/HA bridge.
   temperature, frequency/VRAM, validated power).
 - **[System telemetry](system.md)** — memory, disk, uptime, load, network,
   disk-IO, fan, and a process/service watch.
+- **[Audio & media](audio.md)** — PipeWire/PulseAudio/ALSA status, volume/mic
+  control, and MPRIS now-playing + transport (MQTT command topics).
+- **[Dashboard](../dashboards/linux2mqtt.yaml)** — a ready Lovelace dashboard.
 - **[Raspberry Pi](raspberry-pi.md)** — Pi 5 PMIC power, INA219 HATs, and the
   throttling / overheating / overclocking sensors; `vcgencmd` in a container.
 - **[Configuration](configuration.md)** — every environment variable.

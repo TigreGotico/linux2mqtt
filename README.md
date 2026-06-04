@@ -19,6 +19,11 @@ Under one Home Assistant device:
 - **System** — memory/swap, disk usage + free (per mount), uptime, load average,
   network + disk-IO throughput, fan speed, CPU cores, OS info, and a configurable
   process/service watch (`WATCH_PROCESSES`). See [docs/system.md](docs/system.md).
+- **Audio & media** — PipeWire/PulseAudio/ALSA status, **volume/mic control**
+  (number/switch), and **MPRIS** now-playing + transport buttons. See
+  [docs/audio.md](docs/audio.md).
+
+A ready Lovelace dashboard is in [`dashboards/linux2mqtt.yaml`](dashboards/linux2mqtt.yaml).
 
 ## Run
 

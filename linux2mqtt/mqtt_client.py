@@ -27,7 +27,9 @@ class MQTTClient:
                  has_gpu_power: bool = False, has_cpu: bool = False,
                  has_cpu_power: bool = False, has_rpi: bool = False,
                  has_system: bool = False, disks=None, watch_processes=None,
-                 has_fan: bool = False, client=None) -> None:
+                 has_fan: bool = False, has_audio: bool = False,
+                 has_mic: bool = False, has_mpris: bool = False,
+                 client=None) -> None:
         self._prefix = Config.MQTT_TOPIC_PREFIX
         self._availability = f"{self._prefix}/availability"
         self._has_gpu = has_gpu
@@ -39,6 +41,10 @@ class MQTTClient:
         self._disks = disks or []          # list of (label, path)
         self._watch = watch_processes or []  # list of process names
         self._has_fan = has_fan
+        self._has_audio = has_audio
+        self._has_mic = has_mic
+        self._has_mpris = has_mpris
+        self._commands = {}  # topic -> handler(payload_str)
         self.client = client or new_client(Config.MQTT_CLIENT_ID)
         if client is None:
             if Config.MQTT_USER and Config.MQTT_PASSWORD:
@@ -51,6 +57,7 @@ class MQTTClient:
             self.client.will_set(self._availability, "offline", qos=1, retain=True)
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
+        self.client.on_message = self._on_message
         self._connected = False
         self._has_battery = has_battery
         self._device_name = Config.DEVICE_NAME
@@ -70,12 +77,29 @@ class MQTTClient:
             self.client.publish(self._availability, "online", qos=1, retain=True)
             if Config.HA_ENABLED:
                 self.publish_discovery()
+            for topic in self._commands:
+                self.client.subscribe(topic)
         else:
             LOG.warning("MQTT connection failed, reason=%s", reason_code)
 
     def _on_disconnect(self, client, userdata, *args):
         LOG.warning("MQTT disconnected; will auto-reconnect")
         self._connected = False
+
+    def _on_message(self, client, userdata, msg):
+        handler = self._commands.get(msg.topic)
+        if not handler:
+            return
+        try:
+            handler(msg.payload.decode())
+        except Exception as exc:  # noqa: BLE001
+            LOG.warning("command on %s failed: %s", msg.topic, exc)
+
+    def register_command(self, topic: str, handler) -> None:
+        """Register a handler for an inbound command topic (HA -> device)."""
+        self._commands[topic] = handler
+        if self._connected:
+            self.client.subscribe(topic)
 
     def connect(self) -> None:
         LOG.info("Connecting to MQTT broker %s:%s", Config.MQTT_HOST, Config.MQTT_PORT)
@@ -180,6 +204,16 @@ class MQTTClient:
         if not procs:
             return
         self._publish(f"{self._prefix}/procs", json.dumps(procs))
+
+    def publish_audio(self, audio: Optional[dict]) -> None:
+        if not audio:
+            return
+        self._publish(f"{self._prefix}/audio", json.dumps(audio))
+
+    def publish_media(self, media: Optional[dict]) -> None:
+        if not media:
+            return
+        self._publish(f"{self._prefix}/media", json.dumps(media))
 
     def _publish(self, topic: str, payload: str) -> None:
         if not self._connected:
@@ -355,6 +389,41 @@ class MQTTClient:
                                     "{{ 'ON' if value_json[%r] else 'OFF' }}" % name,
                                     device, device_class="running")
 
+        if self._has_audio:
+            audio = f"{self._prefix}/audio"
+            cmd = f"{self._prefix}/audio/set"
+            self._sensor("Audio Server", "audio_server", audio,
+                         "{{ value_json.server }}", device, icon="mdi:speaker",
+                         entity_category="diagnostic")
+            self._number("Volume", "volume", audio, "{{ value_json.volume }}",
+                         f"{cmd}/volume", device, icon="mdi:volume-high")
+            self._switch("Mute", "mute", audio,
+                         "{{ 'ON' if value_json.mute else 'OFF' }}",
+                         f"{cmd}/mute", device, icon="mdi:volume-mute")
+            if self._has_mic:
+                self._number("Mic Volume", "mic_volume", audio,
+                             "{{ value_json.mic_volume }}", f"{cmd}/mic_volume",
+                             device, icon="mdi:microphone")
+                self._switch("Mic Mute", "mic_mute", audio,
+                             "{{ 'ON' if value_json.mic_mute else 'OFF' }}",
+                             f"{cmd}/mic_mute", device, icon="mdi:microphone-off")
+
+        if self._has_mpris:
+            media = f"{self._prefix}/media"
+            mcmd = f"{self._prefix}/media/set"
+            self._sensor("Media Status", "media_status", media,
+                         "{{ value_json.status }}", device, icon="mdi:play-circle")
+            self._sensor("Media Title", "media_title", media,
+                         "{{ value_json.title }}", device, icon="mdi:music-note")
+            self._sensor("Media Artist", "media_artist", media,
+                         "{{ value_json.artist }}", device, icon="mdi:account-music")
+            self._button("Media Play/Pause", "media_play_pause", mcmd, "play_pause",
+                         device, icon="mdi:play-pause")
+            self._button("Media Next", "media_next", mcmd, "next", device,
+                         icon="mdi:skip-next")
+            self._button("Media Previous", "media_previous", mcmd, "previous", device,
+                         icon="mdi:skip-previous")
+
         if self._has_battery:
             bat = f"{self._prefix}/battery"
             self._sensor("Battery Level", "battery_level", bat,
@@ -415,3 +484,47 @@ class MQTTClient:
             payload["device_class"] = device_class
         topic = f"{Config.HA_DISCOVERY_PREFIX}/binary_sensor/{self._device_id}/{object_id}/config"
         self.client.publish(topic, json.dumps(payload), qos=1, retain=True)
+
+    def _base(self, name: str, object_id: str, device: dict) -> dict:
+        return {
+            "name": f"{self._device_name} {name}",
+            "unique_id": f"{self._device_id}_{object_id}",
+            "device": device,
+            "availability_topic": self._availability,
+            "payload_available": "online",
+            "payload_not_available": "offline",
+        }
+
+    def _number(self, name, object_id, state_topic, value_template, command_topic,
+                device, icon=None) -> None:
+        payload = self._base(name, object_id, device)
+        payload.update({"state_topic": state_topic, "value_template": value_template,
+                        "command_topic": command_topic, "min": 0, "max": 100,
+                        "step": 1, "mode": "slider", "unit_of_measurement": "%"})
+        if icon:
+            payload["icon"] = icon
+        self.client.publish(
+            f"{Config.HA_DISCOVERY_PREFIX}/number/{self._device_id}/{object_id}/config",
+            json.dumps(payload), qos=1, retain=True)
+
+    def _switch(self, name, object_id, state_topic, value_template, command_topic,
+                device, icon=None) -> None:
+        payload = self._base(name, object_id, device)
+        payload.update({"state_topic": state_topic, "value_template": value_template,
+                        "command_topic": command_topic, "payload_on": "ON",
+                        "payload_off": "OFF"})
+        if icon:
+            payload["icon"] = icon
+        self.client.publish(
+            f"{Config.HA_DISCOVERY_PREFIX}/switch/{self._device_id}/{object_id}/config",
+            json.dumps(payload), qos=1, retain=True)
+
+    def _button(self, name, object_id, command_topic, press_payload, device,
+                icon=None) -> None:
+        payload = self._base(name, object_id, device)
+        payload.update({"command_topic": command_topic, "payload_press": press_payload})
+        if icon:
+            payload["icon"] = icon
+        self.client.publish(
+            f"{Config.HA_DISCOVERY_PREFIX}/button/{self._device_id}/{object_id}/config",
+            json.dumps(payload), qos=1, retain=True)

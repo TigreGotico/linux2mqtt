@@ -43,6 +43,11 @@ class Config:
     # Process/service names to expose as "running" binary sensors (comma-separated).
     WATCH_PROCESSES = [p.strip() for p in os.getenv("WATCH_PROCESSES", "").split(",") if p.strip()]
 
+    # Audio: server status + volume/mic (controllable via pactl/amixer)
+    USE_AUDIO: bool = os.getenv("USE_AUDIO", "true").lower() == "true"
+    # MPRIS now-playing + transport control via playerctl
+    USE_MPRIS: bool = os.getenv("USE_MPRIS", "true").lower() == "true"
+
     # Optional trained predictor model (JSON of linear coefficients)
     MODEL_FILE: str = os.getenv("MODEL_FILE", "")
 

@@ -119,6 +119,23 @@ def main() -> None:
         LOG.info("System telemetry: disks=%s, watching=%s, fan=%s",
                  [p for _, p in sysmon.disks], sysmon.watch or "none", sysmon.has_fan)
 
+    audio = None
+    if Config.USE_AUDIO:
+        from .audio import AudioMonitor
+        a = AudioMonitor()
+        if a.available:
+            audio = a
+            LOG.info("Audio: %s server detected", a.server)
+
+    mpris = None
+    if Config.USE_MPRIS:
+        from .mpris import MPRISMonitor
+        m = MPRISMonitor()
+        if m.available:
+            mpris = m
+            LOG.info("MPRIS: playerctl available")
+
+    audio_has_mic = bool(audio and "mic_volume" in audio.read())
     mqtt_client = MQTTClient(has_battery=monitor.has_battery,
                              has_gpu=gpu is not None, has_gpu_power=gpu_power_ok,
                              has_cpu=cpu is not None, has_cpu_power=cpu_power_ok,
@@ -126,7 +143,29 @@ def main() -> None:
                              has_system=sysmon is not None,
                              disks=sysmon.disks if sysmon else [],
                              watch_processes=sysmon.watch if sysmon else [],
-                             has_fan=sysmon.has_fan if sysmon else False)
+                             has_fan=sysmon.has_fan if sysmon else False,
+                             has_audio=audio is not None, has_mic=audio_has_mic,
+                             has_mpris=mpris is not None)
+
+    if audio is not None:
+        cmd = f"{Config.MQTT_TOPIC_PREFIX}/audio/set"
+        mqtt_client.register_command(f"{cmd}/volume",
+                                     lambda p: (audio.set_volume(int(float(p))),
+                                                mqtt_client.publish_audio(audio.read())))
+        mqtt_client.register_command(f"{cmd}/mute",
+                                     lambda p: (audio.set_mute(p == "ON"),
+                                                mqtt_client.publish_audio(audio.read())))
+        mqtt_client.register_command(f"{cmd}/mic_volume",
+                                     lambda p: (audio.set_mic_volume(int(float(p))),
+                                                mqtt_client.publish_audio(audio.read())))
+        mqtt_client.register_command(f"{cmd}/mic_mute",
+                                     lambda p: (audio.set_mic_mute(p == "ON"),
+                                                mqtt_client.publish_audio(audio.read())))
+    if mpris is not None:
+        mqtt_client.register_command(f"{Config.MQTT_TOPIC_PREFIX}/media/set",
+                                     lambda p: (mpris.command(p),
+                                                mqtt_client.publish_media(mpris.read())))
+
     mqtt_client.connect()
     mqtt_client.publish_model(monitor.model)
     if sysmon:
@@ -151,6 +190,10 @@ def main() -> None:
             if sysmon is not None:
                 mqtt_client.publish_system(sysmon.read())
                 mqtt_client.publish_procs(sysmon.processes())
+            if audio is not None:
+                mqtt_client.publish_audio(audio.read())
+            if mpris is not None:
+                mqtt_client.publish_media(mpris.read())
         if dataset_fh and reading.measured:
             from powerguess.model import current_features, device_arch
             dataset_fh.write(json.dumps({
