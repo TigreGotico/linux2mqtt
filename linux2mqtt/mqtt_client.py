@@ -9,6 +9,7 @@ from typing import Optional
 
 from ._mqtt import new_client
 from .config import Config
+from .system import proc_id as _proc_id
 from .version import __version__
 
 LOG = logging.getLogger(__name__)
@@ -25,7 +26,8 @@ class MQTTClient:
     def __init__(self, has_battery: bool = False, has_gpu: bool = False,
                  has_gpu_power: bool = False, has_cpu: bool = False,
                  has_cpu_power: bool = False, has_rpi: bool = False,
-                 client=None) -> None:
+                 has_system: bool = False, disks=None, watch_processes=None,
+                 has_fan: bool = False, client=None) -> None:
         self._prefix = Config.MQTT_TOPIC_PREFIX
         self._availability = f"{self._prefix}/availability"
         self._has_gpu = has_gpu
@@ -33,6 +35,10 @@ class MQTTClient:
         self._has_cpu = has_cpu
         self._has_cpu_power = has_cpu_power
         self._has_rpi = has_rpi
+        self._has_system = has_system
+        self._disks = disks or []          # list of (label, path)
+        self._watch = watch_processes or []  # list of process names
+        self._has_fan = has_fan
         self.client = client or new_client(Config.MQTT_CLIENT_ID)
         if client is None:
             if Config.MQTT_USER and Config.MQTT_PASSWORD:
@@ -159,6 +165,22 @@ class MQTTClient:
             return
         self._publish(f"{self._prefix}/rpi", json.dumps(throttled))
 
+    def publish_system(self, system: Optional[dict]) -> None:
+        if not system:
+            return
+        self._publish(f"{self._prefix}/system", json.dumps(system))
+
+    def publish_system_info(self, info: Optional[dict]) -> None:
+        if not info:
+            return
+        self.client.publish(f"{self._prefix}/system_info", json.dumps(info),
+                            qos=Config.MQTT_QOS, retain=True)
+
+    def publish_procs(self, procs: Optional[dict]) -> None:
+        if not procs:
+            return
+        self._publish(f"{self._prefix}/procs", json.dumps(procs))
+
     def _publish(self, topic: str, payload: str) -> None:
         if not self._connected:
             LOG.debug("MQTT not connected, dropping message to %s", topic)
@@ -274,6 +296,65 @@ class MQTTClient:
                              device, unit="W", device_class="power",
                              state_class="measurement", icon="mdi:expansion-card-variant")
 
+        if self._has_system:
+            sysd = f"{self._prefix}/system"
+            self._sensor("RAM Usage", "ram_usage", sysd, "{{ value_json.ram_percent }}",
+                         device, unit="%", state_class="measurement", icon="mdi:memory")
+            self._sensor("RAM Used", "ram_used", sysd, "{{ value_json.ram_used_mb }}",
+                         device, unit="MB", device_class="data_size",
+                         state_class="measurement", icon="mdi:memory")
+            self._sensor("RAM Total", "ram_total", sysd, "{{ value_json.ram_total_mb }}",
+                         device, unit="MB", device_class="data_size",
+                         entity_category="diagnostic")
+            self._sensor("Swap Usage", "swap_usage", sysd, "{{ value_json.swap_percent }}",
+                         device, unit="%", state_class="measurement", icon="mdi:harddisk")
+            self._sensor("Uptime", "uptime", sysd, "{{ value_json.uptime }}",
+                         device, device_class="timestamp", icon="mdi:clock-start")
+            for n in (1, 5, 15):
+                self._sensor(f"Load {n}m", f"load_{n}", sysd,
+                             "{{ value_json.load_%d }}" % n, device,
+                             state_class="measurement", icon="mdi:gauge")
+            for label, path in self._disks:
+                self._sensor(f"Disk {label} Usage", f"disk_{label}_usage", sysd,
+                             "{{ value_json.disk.%s.percent }}" % label, device,
+                             unit="%", state_class="measurement", icon="mdi:harddisk")
+                self._sensor(f"Disk {label} Free", f"disk_{label}_free", sysd,
+                             "{{ value_json.disk.%s.free_gb }}" % label, device,
+                             unit="GB", device_class="data_size",
+                             state_class="measurement", icon="mdi:harddisk")
+            self._sensor("Network Up", "net_up", sysd, "{{ value_json.net_tx_kbps }}",
+                         device, unit="kB/s", device_class="data_rate",
+                         state_class="measurement", icon="mdi:upload-network")
+            self._sensor("Network Down", "net_down", sysd, "{{ value_json.net_rx_kbps }}",
+                         device, unit="kB/s", device_class="data_rate",
+                         state_class="measurement", icon="mdi:download-network")
+            self._sensor("Disk Read", "disk_read", sysd, "{{ value_json.disk_read_kbps }}",
+                         device, unit="kB/s", device_class="data_rate",
+                         state_class="measurement", icon="mdi:harddisk")
+            self._sensor("Disk Write", "disk_write", sysd, "{{ value_json.disk_write_kbps }}",
+                         device, unit="kB/s", device_class="data_rate",
+                         state_class="measurement", icon="mdi:harddisk")
+            self._sensor("IP Address", "local_ip", sysd, "{{ value_json.local_ip }}",
+                         device, icon="mdi:ip-network", entity_category="diagnostic")
+            self._sensor("CPU Cores", "cpu_cores", sysd, "{{ value_json.cpu_cores }}",
+                         device, icon="mdi:cpu-64-bit", entity_category="diagnostic")
+            if self._has_fan:
+                self._sensor("Fan Speed", "fan_speed", sysd, "{{ value_json.fan_rpm }}",
+                             device, unit="rpm", state_class="measurement", icon="mdi:fan")
+            info = f"{self._prefix}/system_info"
+            self._sensor("Operating System", "os", info, "{{ value_json.os }}",
+                         device, icon="mdi:linux", entity_category="diagnostic")
+            self._sensor("Architecture", "architecture", info,
+                         "{{ value_json.architecture }}", device,
+                         icon="mdi:chip", entity_category="diagnostic")
+
+        if self._watch:
+            procs = f"{self._prefix}/procs"
+            for name in self._watch:
+                self._binary_sensor(f"{name} running", f"proc_{_proc_id(name)}", procs,
+                                    "{{ 'ON' if value_json[%r] else 'OFF' }}" % name,
+                                    device, device_class="running")
+
         if self._has_battery:
             bat = f"{self._prefix}/battery"
             self._sensor("Battery Level", "battery_level", bat,
@@ -293,7 +374,7 @@ class MQTTClient:
     def _sensor(self, name: str, object_id: str, state_topic: str,
                 value_template: str, device: dict, unit: Optional[str] = None,
                 device_class: Optional[str] = None, state_class: Optional[str] = None,
-                icon: Optional[str] = None) -> None:
+                icon: Optional[str] = None, entity_category: Optional[str] = None) -> None:
         payload = {
             "name": f"{self._device_name} {name}",
             "unique_id": f"{self._device_id}_{object_id}",
@@ -312,6 +393,8 @@ class MQTTClient:
             payload["state_class"] = state_class
         if icon:
             payload["icon"] = icon
+        if entity_category:
+            payload["entity_category"] = entity_category
         topic = f"{Config.HA_DISCOVERY_PREFIX}/sensor/{self._device_id}/{object_id}/config"
         self.client.publish(topic, json.dumps(payload), qos=1, retain=True)
 

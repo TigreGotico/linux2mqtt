@@ -35,6 +35,14 @@ class Config:
     USE_GPU: bool = os.getenv("USE_GPU", "true").lower() == "true"
     GPU_INDEX: int = int(os.getenv("GPU_INDEX", "0"))
 
+    # Host system telemetry: memory/swap, disk, uptime, load, network, disk-IO,
+    # fan, CPU-core count, OS info.
+    USE_SYSTEM: bool = os.getenv("USE_SYSTEM", "true").lower() == "true"
+    # Mounts to report disk usage for (comma-separated).
+    DISK_PATHS = [p.strip() for p in os.getenv("DISK_PATHS", "/").split(",") if p.strip()]
+    # Process/service names to expose as "running" binary sensors (comma-separated).
+    WATCH_PROCESSES = [p.strip() for p in os.getenv("WATCH_PROCESSES", "").split(",") if p.strip()]
+
     # Optional trained predictor model (JSON of linear coefficients)
     MODEL_FILE: str = os.getenv("MODEL_FILE", "")
 

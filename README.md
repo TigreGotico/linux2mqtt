@@ -16,6 +16,9 @@ Under one Home Assistant device:
 - **GPU** (NVIDIA) — utilization, temperature, VRAM, and validated power.
 - **Raspberry Pi** — throttling, overheating, overclocking, and undervoltage
   binary sensors.
+- **System** — memory/swap, disk usage + free (per mount), uptime, load average,
+  network + disk-IO throughput, fan speed, CPU cores, OS info, and a configurable
+  process/service watch (`WATCH_PROCESSES`). See [docs/system.md](docs/system.md).
 
 ## Run
 

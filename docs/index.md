@@ -10,6 +10,8 @@ library; this project adds the telemetry and the MQTT/HA bridge.
   energy dashboard, MQTT topics, and availability.
 - **[Components](components.md)** — the CPU and GPU breakdown (utilization,
   temperature, frequency/VRAM, validated power).
+- **[System telemetry](system.md)** — memory, disk, uptime, load, network,
+  disk-IO, fan, and a process/service watch.
 - **[Raspberry Pi](raspberry-pi.md)** — Pi 5 PMIC power, INA219 HATs, and the
   throttling / overheating / overclocking sensors; `vcgencmd` in a container.
 - **[Configuration](configuration.md)** — every environment variable.

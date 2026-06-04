@@ -7,6 +7,7 @@ their own Home Assistant entities:
 - CPU — utilization, frequency, temperature, and package power (RAPL)
 - GPU — utilization, temperature, VRAM, and validated power (NVIDIA)
 - Raspberry Pi — throttling, overheating, overclocking, undervoltage
+- system — memory, disk, uptime, load, network, disk-IO, fan, process watch
 - energy (kWh) and cost
 
 Run ``python -m linux2mqtt`` (or the ``linux2mqtt`` console script) with MQTT

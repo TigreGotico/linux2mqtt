@@ -110,12 +110,27 @@ def main() -> None:
 
     cpu, cpu_power_ok = _build_cpu()
     gpu, gpu_power_ok = _build_gpu()
+
+    sysmon = None
+    if Config.USE_SYSTEM:
+        from .system import SystemMonitor
+        sysmon = SystemMonitor(disk_paths=Config.DISK_PATHS,
+                               watch_processes=Config.WATCH_PROCESSES)
+        LOG.info("System telemetry: disks=%s, watching=%s, fan=%s",
+                 [p for _, p in sysmon.disks], sysmon.watch or "none", sysmon.has_fan)
+
     mqtt_client = MQTTClient(has_battery=monitor.has_battery,
                              has_gpu=gpu is not None, has_gpu_power=gpu_power_ok,
                              has_cpu=cpu is not None, has_cpu_power=cpu_power_ok,
-                             has_rpi=has_rpi)
+                             has_rpi=has_rpi,
+                             has_system=sysmon is not None,
+                             disks=sysmon.disks if sysmon else [],
+                             watch_processes=sysmon.watch if sysmon else [],
+                             has_fan=sysmon.has_fan if sysmon else False)
     mqtt_client.connect()
     mqtt_client.publish_model(monitor.model)
+    if sysmon:
+        mqtt_client.publish_system_info(sysmon.info())
 
     dataset_fh = open(Config.DATASET_FILE, "a") if Config.DATASET_FILE else None
 
@@ -133,6 +148,9 @@ def main() -> None:
                 mqtt_client.publish_cpu(cpu.read())
             if has_rpi:
                 mqtt_client.publish_rpi(rpi.soc_telemetry())
+            if sysmon is not None:
+                mqtt_client.publish_system(sysmon.read())
+                mqtt_client.publish_procs(sysmon.processes())
         if dataset_fh and reading.measured:
             from powerguess.model import current_features, device_arch
             dataset_fh.write(json.dumps({
