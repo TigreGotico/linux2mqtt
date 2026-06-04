@@ -22,6 +22,9 @@ Under one Home Assistant device:
 - **Audio & media** — PipeWire/PulseAudio/ALSA status, **volume/mic control**
   (number/switch), and **MPRIS** now-playing + transport buttons. See
   [docs/audio.md](docs/audio.md).
+- **WiFi & Bluetooth** — connected signal, periodic AP/BT scans (a geolocation
+  fingerprint), and BT **presence** sensors (`WATCH_BT_MACS`). See
+  [docs/radio.md](docs/radio.md).
 
 A ready Lovelace dashboard is in [`dashboards/linux2mqtt.yaml`](dashboards/linux2mqtt.yaml).
 

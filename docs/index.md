@@ -14,6 +14,8 @@ library; this project adds the telemetry and the MQTT/HA bridge.
   disk-IO, fan, and a process/service watch.
 - **[Audio & media](audio.md)** — PipeWire/PulseAudio/ALSA status, volume/mic
   control, and MPRIS now-playing + transport (MQTT command topics).
+- **[WiFi & Bluetooth](radio.md)** — connected signal, periodic AP/BT scans, BT
+  presence, and a geolocation fingerprint for ingeo.
 - **[Dashboard](../dashboards/linux2mqtt.yaml)** — a ready Lovelace dashboard.
 - **[Raspberry Pi](raspberry-pi.md)** — Pi 5 PMIC power, INA219 HATs, and the
   throttling / overheating / overclocking sensors; `vcgencmd` in a container.

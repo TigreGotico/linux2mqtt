@@ -135,6 +135,16 @@ def main() -> None:
             mpris = m
             LOG.info("MPRIS: playerctl available")
 
+    radio = None
+    if Config.USE_RADIO:
+        from .radio import RadioMonitor
+        r = RadioMonitor(watch_bt_macs=Config.WATCH_BT_MACS,
+                         scan_interval=Config.RADIO_SCAN_INTERVAL)
+        if r.available:
+            radio = r
+            LOG.info("Radio: wifi=%s, bluetooth=%s, watching %d BT MAC(s)",
+                     r.has_wifi, r.has_bt, len(r.watch))
+
     audio_has_mic = bool(audio and "mic_volume" in audio.read())
     mqtt_client = MQTTClient(has_battery=monitor.has_battery,
                              has_gpu=gpu is not None, has_gpu_power=gpu_power_ok,
@@ -145,7 +155,10 @@ def main() -> None:
                              watch_processes=sysmon.watch if sysmon else [],
                              has_fan=sysmon.has_fan if sysmon else False,
                              has_audio=audio is not None, has_mic=audio_has_mic,
-                             has_mpris=mpris is not None)
+                             has_mpris=mpris is not None,
+                             has_wifi=radio is not None and radio.has_wifi,
+                             has_bt=radio is not None and radio.has_bt,
+                             watch_bt_macs=radio.watch if radio else [])
 
     if audio is not None:
         cmd = f"{Config.MQTT_TOPIC_PREFIX}/audio/set"
@@ -194,6 +207,10 @@ def main() -> None:
                 mqtt_client.publish_audio(audio.read())
             if mpris is not None:
                 mqtt_client.publish_media(mpris.read())
+            if radio is not None:
+                if radio.due():
+                    mqtt_client.publish_radio_scan(radio.scan())
+                mqtt_client.publish_radio(radio.connected())
         if dataset_fh and reading.measured:
             from powerguess.model import current_features, device_arch
             dataset_fh.write(json.dumps({

@@ -9,6 +9,7 @@ their own Home Assistant entities:
 - Raspberry Pi — throttling, overheating, overclocking, undervoltage
 - system — memory, disk, uptime, load, network, disk-IO, fan, process watch
 - audio — PipeWire/PulseAudio/ALSA status, volume/mic control, MPRIS media
+- radio — WiFi/Bluetooth scans, connected signal, BT presence (geo fingerprint)
 - energy (kWh) and cost
 
 Run ``python -m linux2mqtt`` (or the ``linux2mqtt`` console script) with MQTT

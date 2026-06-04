@@ -48,6 +48,12 @@ class Config:
     # MPRIS now-playing + transport control via playerctl
     USE_MPRIS: bool = os.getenv("USE_MPRIS", "true").lower() == "true"
 
+    # WiFi/Bluetooth scans (nmcli / bluetoothctl): RF env, presence, geo fingerprint
+    USE_RADIO: bool = os.getenv("USE_RADIO", "true").lower() == "true"
+    RADIO_SCAN_INTERVAL: int = int(os.getenv("RADIO_SCAN_INTERVAL", "300"))
+    # Bluetooth MACs to expose as presence binary sensors (comma-separated).
+    WATCH_BT_MACS = [m.strip() for m in os.getenv("WATCH_BT_MACS", "").split(",") if m.strip()]
+
     # Optional trained predictor model (JSON of linear coefficients)
     MODEL_FILE: str = os.getenv("MODEL_FILE", "")
 

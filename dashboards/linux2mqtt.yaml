@@ -97,6 +97,13 @@ views:
           - binary_sensor.ha_pi4_sshd_running
           - binary_sensor.ha_pi4_dockerd_running
           - binary_sensor.ha_pi4_mosquitto_running
+      - type: entities
+        title: Radio (if WiFi/BT present)
+        entities:
+          - entity: sensor.ha_pi4_wifi_signal
+          - entity: sensor.ha_pi4_wifi_ssid
+          - entity: sensor.ha_pi4_wifi_aps_visible
+          - entity: sensor.ha_pi4_bluetooth_devices
 
   - title: CPU / GPU
     path: cpu-gpu

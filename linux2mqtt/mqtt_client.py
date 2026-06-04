@@ -29,6 +29,7 @@ class MQTTClient:
                  has_system: bool = False, disks=None, watch_processes=None,
                  has_fan: bool = False, has_audio: bool = False,
                  has_mic: bool = False, has_mpris: bool = False,
+                 has_wifi: bool = False, has_bt: bool = False, watch_bt_macs=None,
                  client=None) -> None:
         self._prefix = Config.MQTT_TOPIC_PREFIX
         self._availability = f"{self._prefix}/availability"
@@ -44,6 +45,9 @@ class MQTTClient:
         self._has_audio = has_audio
         self._has_mic = has_mic
         self._has_mpris = has_mpris
+        self._has_wifi = has_wifi
+        self._has_bt = has_bt
+        self._watch_bt = watch_bt_macs or []
         self._commands = {}  # topic -> handler(payload_str)
         self.client = client or new_client(Config.MQTT_CLIENT_ID)
         if client is None:
@@ -214,6 +218,23 @@ class MQTTClient:
         if not media:
             return
         self._publish(f"{self._prefix}/media", json.dumps(media))
+
+    def publish_radio(self, radio: Optional[dict]) -> None:
+        if not radio:
+            return
+        self._publish(f"{self._prefix}/wifi", json.dumps(radio))
+
+    def publish_radio_scan(self, scan: Optional[dict]) -> None:
+        if not scan:
+            return
+        if "wifi" in scan:
+            self._publish(f"{self._prefix}/wifi_scan",
+                          json.dumps({"networks": scan["wifi"]}))
+        if "bt" in scan:
+            self._publish(f"{self._prefix}/bt_scan",
+                          json.dumps({"devices": scan["bt"]}))
+        if scan.get("presence"):
+            self._publish(f"{self._prefix}/bt_presence", json.dumps(scan["presence"]))
 
     def _publish(self, topic: str, payload: str) -> None:
         if not self._connected:
@@ -424,6 +445,28 @@ class MQTTClient:
             self._button("Media Previous", "media_previous", mcmd, "previous", device,
                          icon="mdi:skip-previous")
 
+        if self._has_wifi:
+            wifi = f"{self._prefix}/wifi"
+            self._sensor("WiFi Signal", "wifi_signal", wifi, "{{ value_json.signal }}",
+                         device, unit="%", state_class="measurement", icon="mdi:wifi")
+            self._sensor("WiFi SSID", "wifi_ssid", wifi, "{{ value_json.ssid }}",
+                         device, icon="mdi:wifi", entity_category="diagnostic")
+            self._sensor("WiFi APs Visible", "wifi_ap_count", wifi,
+                         "{{ value_json.ap_count }}", device,
+                         icon="mdi:access-point-network", state_class="measurement",
+                         json_attributes_topic=f"{self._prefix}/wifi_scan")
+
+        if self._has_bt:
+            self._sensor("Bluetooth Devices", "bt_count", f"{self._prefix}/wifi",
+                         "{{ value_json.bt_count }}", device, icon="mdi:bluetooth",
+                         state_class="measurement",
+                         json_attributes_topic=f"{self._prefix}/bt_scan")
+            for mac in self._watch_bt:
+                self._binary_sensor(f"BT {mac}", f"bt_{_proc_id(mac)}",
+                                    f"{self._prefix}/bt_presence",
+                                    "{{ 'ON' if value_json[%r] else 'OFF' }}" % mac.upper(),
+                                    device, device_class="presence")
+
         if self._has_battery:
             bat = f"{self._prefix}/battery"
             self._sensor("Battery Level", "battery_level", bat,
@@ -443,7 +486,8 @@ class MQTTClient:
     def _sensor(self, name: str, object_id: str, state_topic: str,
                 value_template: str, device: dict, unit: Optional[str] = None,
                 device_class: Optional[str] = None, state_class: Optional[str] = None,
-                icon: Optional[str] = None, entity_category: Optional[str] = None) -> None:
+                icon: Optional[str] = None, entity_category: Optional[str] = None,
+                json_attributes_topic: Optional[str] = None) -> None:
         payload = {
             "name": f"{self._device_name} {name}",
             "unique_id": f"{self._device_id}_{object_id}",
@@ -464,6 +508,8 @@ class MQTTClient:
             payload["icon"] = icon
         if entity_category:
             payload["entity_category"] = entity_category
+        if json_attributes_topic:
+            payload["json_attributes_topic"] = json_attributes_topic
         topic = f"{Config.HA_DISCOVERY_PREFIX}/sensor/{self._device_id}/{object_id}/config"
         self.client.publish(topic, json.dumps(payload), qos=1, retain=True)
 
