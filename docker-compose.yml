@@ -1,0 +1,56 @@
+version: "3.8"
+
+services:
+  linux2mqtt:
+    image: ghcr.io/jarbasal/linux2mqtt:dev
+    container_name: linux2mqtt
+    restart: unless-stopped
+    # Battery rails and the device model are read from the host. powerstat
+    # additionally needs privileged access to the host's RAPL/MSR; drop
+    # `privileged` and the /dev/cpu mount to run the CPU-load estimate instead.
+    privileged: true
+    volumes:
+      - /sys/class/power_supply:/sys/class/power_supply:ro
+      - /proc/device-tree:/proc/device-tree:ro
+      - /dev/cpu:/dev/cpu
+    environment:
+      # MQTT
+      - MQTT_HOST=${MQTT_HOST:-localhost}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - MQTT_TOPIC_PREFIX=${MQTT_TOPIC_PREFIX:-powerguess}
+      - MQTT_QOS=${MQTT_QOS:-0}
+      - MQTT_RETAIN=${MQTT_RETAIN:-true}
+      # Monitor
+      - MEASURE_INTERVAL=${MEASURE_INTERVAL:-5}
+      - PUBLISH_INTERVAL=${PUBLISH_INTERVAL:-5}
+      - PUBLISH_DELTA=${PUBLISH_DELTA:-0.5}
+      - SMOOTH=${SMOOTH:-false}
+      - PREFER_BATTERY=${PREFER_BATTERY:-false}
+      # Calibration & measured sources (see docs/calibration.md)
+      - CALIBRATION_FILE=${CALIBRATION_FILE:-}
+      - AUTO_CALIBRATE=${AUTO_CALIBRATE:-true}
+      - USE_INA219=${USE_INA219:-false}
+      - MODEL_FILE=${MODEL_FILE:-}
+      # Home Assistant
+      - HA_ENABLED=${HA_ENABLED:-true}
+      - HA_DISCOVERY_PREFIX=${HA_DISCOVERY_PREFIX:-homeassistant}
+      - DEVICE_NAME=${DEVICE_NAME:-PowerGuess}
+      - DEVICE_ID=${DEVICE_ID:-powerguess_01}
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    # Optional: use host network if the MQTT broker is on localhost.
+    # network_mode: host
+    # Raspberry Pi: expose vcgencmd for throttling/overheating/overclocking and
+    # (Pi 5) PMIC power. vcgencmd is statically linked, so only the binary +
+    # VideoCore devices are needed. Also pass the board model (device-tree isn't
+    # visible in-container):
+    #   environment:
+    #     - POWERGUESS_MODEL=Raspberry Pi 4 Model B
+    #   volumes:
+    #     - /usr/bin/vcgencmd:/usr/bin/vcgencmd:ro
+    #     - /sys/class/thermal:/sys/class/thermal:ro
+    #   devices:
+    #     - /dev/vcio
+    #     - /dev/vchiq

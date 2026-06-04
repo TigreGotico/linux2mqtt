@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "linux2mqtt"
+dynamic = ["version"]
+description = "Publish Linux/SBC power and system telemetry to MQTT for Home Assistant"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+authors = [{name = "JarbasAi", email = "jarbasai@mailfence.com"}]
+keywords = ["mqtt", "home-assistant", "power", "energy", "raspberry-pi", "rapl",
+            "nvidia", "throttling", "monitoring", "iot", "smart-home", "homelab"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Home Automation",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "powerguess",
+    "paho-mqtt>=1.6",
+    "psutil",
+]
+
+[project.optional-dependencies]
+# INA219 I2C power-monitor support (passed through to powerguess).
+ina219 = ["smbus2"]
+test = ["pytest>=7", "pytest-cov"]
+
+[project.scripts]
+linux2mqtt = "linux2mqtt.__main__:main"
+linux2mqtt-calibrate = "linux2mqtt.wizard:main"
+
+[project.urls]
+Homepage = "https://github.com/JarbasAl/linux2mqtt"
+
+[tool.setuptools.dynamic]
+version = {attr = "linux2mqtt.version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["linux2mqtt*"]
+exclude = ["test*"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+addopts = "-q"
