@@ -38,9 +38,13 @@ sudo udevadm control --reload-rules && sudo udevadm trigger --subsystem-match=po
 This re-exposes the RAPL power side-channel to local users — fine on a trusted
 host. Restart the container afterwards so it re-detects RAPL.
 
-## GPU (NVIDIA)
+## GPU (NVIDIA & AMD)
 
-Auto-detected via `nvidia-smi` (`USE_GPU=true`, `GPU_INDEX=0`):
+Auto-detected (`USE_GPU=true`, `GPU_INDEX=0`): **NVIDIA** via `nvidia-smi`, **AMD**
+via the amdgpu **sysfs/hwmon** interface (`gpu_busy_percent`, `temp1_input`,
+`power1_average`/`power1_input`, `mem_info_vram_*`) — no extra tools, like RAPL.
+With multiple AMD cards (dGPU + APU iGPU), `GPU_INDEX` picks among them (0 = first).
+In a container the host `/sys` must be visible (e.g. `--privileged`).
 
 | Entity | Unit | Notes |
 | --- | --- | --- |

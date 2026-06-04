@@ -51,9 +51,9 @@ def _build_gpu():
     if not Config.USE_GPU:
         return None, False
     try:
-        from .gpu import NvidiaGPU
-        if NvidiaGPU.available():
-            gpu = NvidiaGPU(index=Config.GPU_INDEX)
+        from .gpu import detect_gpu
+        gpu = detect_gpu(index=Config.GPU_INDEX)
+        if gpu is not None:
             first = gpu.read()
             if first is not None:
                 LOG.info("GPU detected: %s (power %s)", first.name,

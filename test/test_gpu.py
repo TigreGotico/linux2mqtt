@@ -1,4 +1,6 @@
-from linux2mqtt.gpu import GPUReading, parse_gpu_csv, _validate_power
+import os
+import linux2mqtt.gpu as gpu_mod
+from linux2mqtt.gpu import GPUReading, parse_gpu_csv, _validate_power, AmdGPU
 
 
 def test_parse_valid_row():
@@ -38,3 +40,42 @@ def test_validate_power_helper():
 
 def test_short_row_returns_none():
     assert parse_gpu_csv("85, 115, 70") is None
+
+
+def _fake_amd_card(tmp_path, busy=100, vram_used=16969158656, vram_total=17163091968,
+                   temp=62000, power_avg=122000000, power_input=None):
+    dev = tmp_path / "card0" / "device"
+    hw = dev / "hwmon" / "hwmon9"
+    hw.mkdir(parents=True)
+    (dev / "vendor").write_text("0x1002\n")
+    (dev / "gpu_busy_percent").write_text(f"{busy}\n")
+    (dev / "mem_info_vram_used").write_text(f"{vram_used}\n")
+    (dev / "mem_info_vram_total").write_text(f"{vram_total}\n")
+    (hw / "temp1_input").write_text(f"{temp}\n")
+    if power_avg is not None:
+        (hw / "power1_average").write_text(f"{power_avg}\n")
+    if power_input is not None:
+        (hw / "power1_input").write_text(f"{power_input}\n")
+    return str(dev)
+
+
+def test_amd_read_dgpu(tmp_path, monkeypatch):
+    dev = _fake_amd_card(tmp_path)
+    monkeypatch.setattr(AmdGPU, "cards", staticmethod(lambda: [dev]))
+    r = AmdGPU(0).read()
+    assert r.name == "AMD GPU"
+    assert r.utilization == 100.0 and r.temperature == 62.0
+    assert r.power == 122.0 and r.power_valid is True
+    assert r.as_dict()["memory_percent"] == 98.9  # 16.97/17.16 GB
+
+
+def test_amd_power_input_fallback(tmp_path, monkeypatch):
+    # APU/iGPU style: only power1_input present.
+    dev = _fake_amd_card(tmp_path, busy=0, power_avg=None, power_input=37189000)
+    monkeypatch.setattr(AmdGPU, "cards", staticmethod(lambda: [dev]))
+    assert AmdGPU(0).read().as_dict()["power"] == 37.19
+
+
+def test_amd_unavailable(monkeypatch):
+    monkeypatch.setattr(AmdGPU, "cards", staticmethod(lambda: []))
+    assert AmdGPU.available() is False
