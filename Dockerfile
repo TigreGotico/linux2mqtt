@@ -3,6 +3,7 @@ FROM python:3.11-slim
 # powerstat (x86 RAPL) and dmidecode are optional power helpers; on a Pi the
 # host's vcgencmd is mounted in (statically linked) — see docs/raspberry-pi.md.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
     powerstat \
     dmidecode \
     && rm -rf /var/lib/apt/lists/*
