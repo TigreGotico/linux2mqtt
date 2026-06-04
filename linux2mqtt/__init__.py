@@ -1,6 +1,6 @@
 """linux2mqtt — publish Linux/SBC system metrics to MQTT for Home Assistant.
 
-A homelab bridge: whole-device **power** (via the [powerguess](https://github.com/JarbasAl/powerguess)
+A homelab bridge: whole-device **power** (via the [powerguess](https://github.com/TigreGotico/powerguess)
 library — measured or estimated, with provenance) plus **system telemetry** as
 their own Home Assistant entities:
 

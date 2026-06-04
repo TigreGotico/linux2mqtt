@@ -1,7 +1,7 @@
 # linux2mqtt documentation
 
 Publish a Linux/SBC box's power and system telemetry to MQTT for Home Assistant.
-Power is provided by the [powerguess](https://github.com/JarbasAl/powerguess)
+Power is provided by the [powerguess](https://github.com/TigreGotico/powerguess)
 library; this project adds the telemetry and the MQTT/HA bridge.
 
 ## Pages
@@ -22,4 +22,4 @@ linux2mqtt-calibrate --battery  # laptops: automatic, CPU+GPU load, no smart plu
 ```
 
 The estimate model, bounded-envelope theory, calibration API, and dataset/trainer
-are documented in [powerguess](https://github.com/JarbasAl/powerguess).
+are documented in [powerguess](https://github.com/TigreGotico/powerguess).

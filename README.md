@@ -2,7 +2,7 @@
 
 Publish a Linux box's **power and system telemetry** to MQTT with Home Assistant
 auto-discovery — built for the homelab. Power comes from the
-[powerguess](https://github.com/JarbasAl/powerguess) library (measured or
+[powerguess](https://github.com/TigreGotico/powerguess) library (measured or
 estimated, with provenance); linux2mqtt adds the system sensors and the bridge.
 
 ## Entities
@@ -30,7 +30,7 @@ Or in Docker (see [`docker-compose.yml`](docker-compose.yml); the Raspberry Pi
 ```bash
 docker run -d --name linux2mqtt --network host --restart unless-stopped \
   -e MQTT_HOST=127.0.0.1 -e MQTT_USER=… -e MQTT_PASSWORD=… \
-  ghcr.io/jarbasal/linux2mqtt:latest
+  ghcr.io/tigregotico/linux2mqtt:latest
 ```
 
 ## Calibrate the power estimate
@@ -49,7 +49,7 @@ linux2mqtt-calibrate --battery  # laptop battery, fully automatic (CPU+GPU load)
 - [Configuration](docs/configuration.md) — all environment variables.
 
 Power estimation, calibration, and the dataset/model live in
-[powerguess](https://github.com/JarbasAl/powerguess).
+[powerguess](https://github.com/TigreGotico/powerguess).
 
 ## License
 

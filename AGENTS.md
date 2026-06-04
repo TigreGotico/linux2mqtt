@@ -4,7 +4,7 @@ Homelab MQTT bridge: publish a Linux/SBC box's power + system telemetry to Home
 Assistant via MQTT discovery. **Power comes from the `powerguess` library**
 (a dependency); this project owns the MQTT layer and all non-power telemetry.
 
-**Org:** JarbasAl / **Branch:** dev (work) / master (stable) / **depends on:** powerguess
+**Org:** TigreGotico / **Branch:** dev (work) / master (stable) / **depends on:** powerguess
 
 ## Layout
 

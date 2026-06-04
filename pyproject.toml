@@ -37,7 +37,7 @@ linux2mqtt = "linux2mqtt.__main__:main"
 linux2mqtt-calibrate = "linux2mqtt.wizard:main"
 
 [project.urls]
-Homepage = "https://github.com/JarbasAl/linux2mqtt"
+Homepage = "https://github.com/TigreGotico/linux2mqtt"
 
 [tool.setuptools.dynamic]
 version = {attr = "linux2mqtt.version.__version__"}

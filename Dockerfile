@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # The power library (separate project) — installed from source.
-RUN pip install --no-cache-dir "git+https://github.com/JarbasAl/powerguess.git@dev"
+RUN pip install --no-cache-dir "git+https://github.com/TigreGotico/powerguess.git@dev"
 
 COPY pyproject.toml README.md ./
 COPY linux2mqtt/ ./linux2mqtt/

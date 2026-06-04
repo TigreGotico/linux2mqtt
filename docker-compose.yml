@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   linux2mqtt:
-    image: ghcr.io/jarbasal/linux2mqtt:dev
+    image: ghcr.io/tigregotico/linux2mqtt:dev
     container_name: linux2mqtt
     restart: unless-stopped
     # Battery rails and the device model are read from the host. powerstat
