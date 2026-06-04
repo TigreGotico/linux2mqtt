@@ -172,8 +172,8 @@ class MQTTClient:
         return {
             "identifiers": [self._device_id],
             "name": self._device_name,
-            "model": "PowerGuess",
-            "manufacturer": "JarbasAi",
+            "model": "linux2mqtt",
+            "manufacturer": "TigreGotico",
             "sw_version": __version__,
         }
 
