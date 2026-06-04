@@ -261,7 +261,7 @@ class MQTTClient:
 
         self._sensor("Power", "power", state, "{{ value_json.power }}", device,
                      unit="W", device_class="power", state_class="measurement",
-                     icon="mdi:flash")
+                     icon="mdi:flash", precision=1)
         self._sensor("Current", "current", state, "{{ value_json.current }}", device,
                      unit="A", device_class="current", state_class="measurement")
         self._sensor("Voltage", "voltage", state, "{{ value_json.voltage }}", device,
@@ -274,7 +274,7 @@ class MQTTClient:
                      icon="mdi:check-decagram")
         self._sensor("Error Margin", "error_margin", state,
                      "{{ value_json.error_margin }}", device, unit="W",
-                     icon="mdi:plus-minus")
+                     icon="mdi:plus-minus", precision=1, entity_category="diagnostic")
         # The envelope: idle floor and peak/PSU ceiling the estimate sits between.
         self._sensor("Power Floor", "power_floor", state, "{{ value_json.floor }}",
                      device, unit="W", device_class="power", icon="mdi:arrow-collapse-down")
@@ -285,7 +285,8 @@ class MQTTClient:
                          unit=Config.CURRENCY, device_class="monetary",
                          state_class="total_increasing", icon="mdi:cash")
         self._sensor("Model", "model", f"{self._prefix}/model",
-                     "{{ value_json.model }}", device, icon="mdi:cpu-64-bit")
+                     "{{ value_json.model }}", device, icon="mdi:cpu-64-bit",
+                     entity_category="diagnostic")
 
         if self._has_rpi:
             rpi = f"{self._prefix}/rpi"
@@ -312,9 +313,10 @@ class MQTTClient:
                          state_class="measurement")
             self._sensor("Configured ARM Freq", "arm_freq_config", rpi,
                          "{{ value_json.arm_freq_config_mhz }}", device, unit="MHz",
-                         device_class="frequency")
+                         device_class="frequency", entity_category="diagnostic")
             self._sensor("Over-voltage", "over_voltage", rpi,
-                         "{{ value_json.over_voltage }}", device, icon="mdi:flash-alert")
+                         "{{ value_json.over_voltage }}", device, icon="mdi:flash-alert",
+                         entity_category="diagnostic")
             self._sensor("Core Voltage", "core_voltage", rpi,
                          "{{ value_json.core_volts }}", device, unit="V",
                          device_class="voltage", state_class="measurement")
@@ -333,7 +335,7 @@ class MQTTClient:
             if self._has_cpu_power:
                 self._sensor("CPU Power", "cpu_power", cpu, "{{ value_json.power }}",
                              device, unit="W", device_class="power",
-                             state_class="measurement", icon="mdi:cpu-64-bit")
+                             state_class="measurement", icon="mdi:cpu-64-bit", precision=1)
 
         if self._has_gpu:
             gpu = f"{self._prefix}/gpu"
@@ -349,7 +351,8 @@ class MQTTClient:
             if self._has_gpu_power:
                 self._sensor("GPU Power", "gpu_power", gpu, "{{ value_json.power }}",
                              device, unit="W", device_class="power",
-                             state_class="measurement", icon="mdi:expansion-card-variant")
+                             state_class="measurement", icon="mdi:expansion-card-variant",
+                             precision=1)
 
         if self._has_system:
             sysd = f"{self._prefix}/system"
@@ -357,7 +360,7 @@ class MQTTClient:
                          device, unit="%", state_class="measurement", icon="mdi:memory")
             self._sensor("RAM Used", "ram_used", sysd, "{{ value_json.ram_used_mb }}",
                          device, unit="MB", device_class="data_size",
-                         state_class="measurement", icon="mdi:memory")
+                         state_class="measurement", icon="mdi:memory", precision=0)
             self._sensor("RAM Total", "ram_total", sysd, "{{ value_json.ram_total_mb }}",
                          device, unit="MB", device_class="data_size",
                          entity_category="diagnostic")
@@ -368,7 +371,7 @@ class MQTTClient:
             for n in (1, 5, 15):
                 self._sensor(f"Load {n}m", f"load_{n}", sysd,
                              "{{ value_json.load_%d }}" % n, device,
-                             state_class="measurement", icon="mdi:gauge")
+                             state_class="measurement", icon="mdi:gauge", precision=2)
             for label, path in self._disks:
                 self._sensor(f"Disk {label} Usage", f"disk_{label}_usage", sysd,
                              "{{ value_json.disk.%s.percent }}" % label, device,
@@ -379,16 +382,16 @@ class MQTTClient:
                              state_class="measurement", icon="mdi:harddisk")
             self._sensor("Network Up", "net_up", sysd, "{{ value_json.net_tx_kbps }}",
                          device, unit="kB/s", device_class="data_rate",
-                         state_class="measurement", icon="mdi:upload-network")
+                         state_class="measurement", icon="mdi:upload-network", precision=1)
             self._sensor("Network Down", "net_down", sysd, "{{ value_json.net_rx_kbps }}",
                          device, unit="kB/s", device_class="data_rate",
-                         state_class="measurement", icon="mdi:download-network")
+                         state_class="measurement", icon="mdi:download-network", precision=1)
             self._sensor("Disk Read", "disk_read", sysd, "{{ value_json.disk_read_kbps }}",
                          device, unit="kB/s", device_class="data_rate",
-                         state_class="measurement", icon="mdi:harddisk")
+                         state_class="measurement", icon="mdi:harddisk", precision=1)
             self._sensor("Disk Write", "disk_write", sysd, "{{ value_json.disk_write_kbps }}",
                          device, unit="kB/s", device_class="data_rate",
-                         state_class="measurement", icon="mdi:harddisk")
+                         state_class="measurement", icon="mdi:harddisk", precision=1)
             self._sensor("IP Address", "local_ip", sysd, "{{ value_json.local_ip }}",
                          device, icon="mdi:ip-network", entity_category="diagnostic")
             self._sensor("CPU Cores", "cpu_cores", sysd, "{{ value_json.cpu_cores }}",
@@ -487,7 +490,8 @@ class MQTTClient:
                 value_template: str, device: dict, unit: Optional[str] = None,
                 device_class: Optional[str] = None, state_class: Optional[str] = None,
                 icon: Optional[str] = None, entity_category: Optional[str] = None,
-                json_attributes_topic: Optional[str] = None) -> None:
+                json_attributes_topic: Optional[str] = None,
+                precision: Optional[int] = None) -> None:
         payload = {
             "name": f"{self._device_name} {name}",
             "unique_id": f"{self._device_id}_{object_id}",
@@ -510,6 +514,8 @@ class MQTTClient:
             payload["entity_category"] = entity_category
         if json_attributes_topic:
             payload["json_attributes_topic"] = json_attributes_topic
+        if precision is not None:
+            payload["suggested_display_precision"] = precision
         topic = f"{Config.HA_DISCOVERY_PREFIX}/sensor/{self._device_id}/{object_id}/config"
         self.client.publish(topic, json.dumps(payload), qos=1, retain=True)
 
