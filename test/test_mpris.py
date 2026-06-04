@@ -7,6 +7,21 @@ def test_unavailable_without_playerctl(monkeypatch):
     assert MPRISMonitor().available is False
 
 
+def test_available_with_bus_but_no_player(monkeypatch):
+    # playerctl present, session bus reachable, no current player -> still available.
+    monkeypatch.setattr(mpris, "which", lambda x: "/usr/bin/playerctl")
+    monkeypatch.setattr(mpris, "_run", lambda args: "" if args == ["-l"] else None)
+    mon = MPRISMonitor()
+    assert mon.available is True
+    assert mon.read()["status"] == "No player"
+
+
+def test_unavailable_when_bus_unreachable(monkeypatch):
+    monkeypatch.setattr(mpris, "which", lambda x: "/usr/bin/playerctl")
+    monkeypatch.setattr(mpris, "_run", lambda args: None)  # -l errors
+    assert MPRISMonitor().available is False
+
+
 def test_read_metadata(monkeypatch):
     monkeypatch.setattr(mpris, "which", lambda x: "/usr/bin/playerctl")
     def fake(args):

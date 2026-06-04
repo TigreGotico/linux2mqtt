@@ -16,6 +16,8 @@ library; this project adds the telemetry and the MQTT/HA bridge.
   control, and MPRIS now-playing + transport (MQTT command topics).
 - **[WiFi & Bluetooth](radio.md)** — connected signal, periodic AP/BT scans, BT
   presence, and a geolocation fingerprint for ingeo.
+- **[Deployment](deployment.md)** — Docker recipes per host: the base run, the
+  capability→mount matrix, and worked examples (Pi, server, audio box, laptop).
 - **[Dashboard](../dashboards/linux2mqtt.yaml)** — a ready Lovelace dashboard.
 - **[Raspberry Pi](raspberry-pi.md)** — Pi 5 PMIC power, INA219 HATs, and the
   throttling / overheating / overclocking sensors; `vcgencmd` in a container.

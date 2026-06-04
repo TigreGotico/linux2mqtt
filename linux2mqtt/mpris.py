@@ -29,8 +29,10 @@ class MPRISMonitor:
 
     @property
     def available(self) -> bool:
-        # playerctl present and at least one player has ever registered.
-        return self._has and _run(["status"]) is not None
+        # playerctl present and able to reach the session bus (``-l`` succeeds even
+        # with no current player; it errors only when the bus is unreachable). So
+        # a media host gets the entities and shows "No player" between playback.
+        return self._has and _run(["-l"]) is not None
 
     def read(self) -> dict:
         status = _run(["status"]) or "No player"
