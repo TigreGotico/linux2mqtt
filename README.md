@@ -10,8 +10,8 @@ estimated, with provenance); linux2mqtt adds the system sensors and the bridge.
 Under one Home Assistant device:
 
 - **Power** — total device watts (measured: INA219 / Pi 5 PMIC / battery; or
-  estimated with an error band), plus **energy** (kWh), **cost**, the source and
-  error-margin, and the idle/peak envelope.
+  estimated) plus current and voltage. Source, error-margin, and the idle/peak
+  envelope are diagnostic entities. (Energy/cost are not exposed.)
 - **CPU** — utilization, frequency, temperature, and package power (RAPL).
 - **GPU** (NVIDIA) — utilization, temperature, VRAM, and validated power.
 - **Raspberry Pi** — throttling, overheating, overclocking, and undervoltage

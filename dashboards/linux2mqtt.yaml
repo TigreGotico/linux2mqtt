@@ -24,12 +24,12 @@ views:
         title: Power detail
         entities:
           - entity: sensor.ha_pi4_power
+          - entity: sensor.ha_pi4_current
+          - entity: sensor.ha_pi4_voltage
           - entity: sensor.ha_pi4_source
           - entity: sensor.ha_pi4_error_margin
           - entity: sensor.ha_pi4_power_floor
           - entity: sensor.ha_pi4_power_ceiling
-          - entity: sensor.ha_pi4_energy
-          - entity: sensor.ha_pi4_cost
           - entity: sensor.ha_pi4_model
       - type: history-graph
         title: Power & envelope (24h)
@@ -38,12 +38,6 @@ views:
           - sensor.ha_pi4_power
           - sensor.ha_pi4_power_floor
           - sensor.ha_pi4_power_ceiling
-      - type: statistics-graph
-        title: Energy
-        chart_type: bar
-        period: hour
-        stat_types: [state]
-        entities: [sensor.ha_pi4_energy]
 
   - title: System
     path: system

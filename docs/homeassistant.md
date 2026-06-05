@@ -9,18 +9,20 @@ same broker. No YAML required.
 
 A single device, **PowerGuess** (`powerguess_01` by default), exposing:
 
-| Entity | Unit | Device class |
+The power readings are **power / current / voltage**; everything else is a
+**diagnostic** entity (HA's *Diagnostic* section). Energy and cost are not
+exposed.
+
+| Entity | Unit | Category |
 | --- | --- | --- |
-| `sensor.powerguess_power` | W | power |
-| `sensor.powerguess_current` | A | current |
-| `sensor.powerguess_voltage` | V | voltage |
-| `sensor.powerguess_energy` | kWh | energy (total_increasing) |
-| `sensor.powerguess_source` | — | provenance: `ina219`/`powerstat`/`battery`/`estimate` |
-| `sensor.powerguess_error_margin` | W | ± band on an estimate |
-| `sensor.powerguess_power_floor` | W | idle floor (envelope lower bound) |
-| `sensor.powerguess_power_ceiling` | W | peak/PSU ceiling (envelope upper bound) |
-| `sensor.powerguess_cost` | currency | energy × tariff (only if `ENERGY_TARIFF` set) |
-| `sensor.powerguess_model` | — | — |
+| `sensor.<dev>_power` | W | measurement |
+| `sensor.<dev>_current` | A | measurement |
+| `sensor.<dev>_voltage` | V | measurement |
+| `sensor.<dev>_source` | — | diagnostic — provenance: `ina219`/`pmic`/`powerstat`/`battery`/`estimate` |
+| `sensor.<dev>_error_margin` | W | diagnostic — ± band on an estimate |
+| `sensor.<dev>_power_floor` | W | diagnostic — idle floor (envelope lower bound) |
+| `sensor.<dev>_power_ceiling` | W | diagnostic — peak/PSU ceiling (envelope upper bound) |
+| `sensor.<dev>_model` | — | diagnostic |
 
 It also breaks out per-component telemetry. **CPU** (always):
 

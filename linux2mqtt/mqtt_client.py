@@ -266,24 +266,20 @@ class MQTTClient:
                      unit="A", device_class="current", state_class="measurement")
         self._sensor("Voltage", "voltage", state, "{{ value_json.voltage }}", device,
                      unit="V", device_class="voltage", state_class="measurement")
-        self._sensor("Energy", "energy", state, "{{ value_json.energy }}", device,
-                     unit="kWh", device_class="energy",
-                     state_class="total_increasing", icon="mdi:lightning-bolt")
-        # Provenance: whether the latest reading is measured or estimated.
+        # Diagnostics: provenance, the estimate's ± margin, and the idle/peak
+        # envelope. power/current/voltage above are the readings; energy & cost
+        # are intentionally not exposed.
         self._sensor("Source", "source", state, "{{ value_json.source }}", device,
-                     icon="mdi:check-decagram")
+                     icon="mdi:check-decagram", entity_category="diagnostic")
         self._sensor("Error Margin", "error_margin", state,
                      "{{ value_json.error_margin }}", device, unit="W",
                      icon="mdi:plus-minus", precision=1, entity_category="diagnostic")
-        # The envelope: idle floor and peak/PSU ceiling the estimate sits between.
         self._sensor("Power Floor", "power_floor", state, "{{ value_json.floor }}",
-                     device, unit="W", device_class="power", icon="mdi:arrow-collapse-down")
+                     device, unit="W", device_class="power", precision=1,
+                     icon="mdi:arrow-collapse-down", entity_category="diagnostic")
         self._sensor("Power Ceiling", "power_ceiling", state, "{{ value_json.ceiling }}",
-                     device, unit="W", device_class="power", icon="mdi:arrow-collapse-up")
-        if Config.ENERGY_TARIFF > 0:
-            self._sensor("Cost", "cost", state, "{{ value_json.cost }}", device,
-                         unit=Config.CURRENCY, device_class="monetary",
-                         state_class="total_increasing", icon="mdi:cash")
+                     device, unit="W", device_class="power", precision=1,
+                     icon="mdi:arrow-collapse-up", entity_category="diagnostic")
         self._sensor("Model", "model", f"{self._prefix}/model",
                      "{{ value_json.model }}", device, icon="mdi:cpu-64-bit",
                      entity_category="diagnostic")

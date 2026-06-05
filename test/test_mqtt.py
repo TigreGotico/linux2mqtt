@@ -45,11 +45,12 @@ def test_discovery_without_battery():
     c._connected = True
     c.publish_discovery()
     keys = [t.split("/")[-2] for t, _ in fake.published]
-    assert keys == ["power", "current", "voltage", "energy", "source",
-                    "error_margin", "power_floor", "power_ceiling", "model"]
-    energy = [p for t, p in fake.published if t.endswith("/energy/config")][0]
-    assert energy["device_class"] == "energy"
-    assert energy["state_class"] == "total_increasing"
+    # Only power/current/voltage are exposed; source/error_margin/model are
+    # diagnostic. Energy/cost/envelope are intentionally dropped.
+    assert keys == ["power", "current", "voltage", "source", "error_margin",
+                    "power_floor", "power_ceiling", "model"]
+    for dropped in ("energy", "cost"):
+        assert dropped not in keys
 
 
 def test_discovery_with_battery(client_with_battery):
@@ -58,7 +59,7 @@ def test_discovery_with_battery(client_with_battery):
     topics = [t for t, _ in fake.published]
     assert any("battery_level" in t for t in topics)
     assert any("binary_sensor" in t and "charging" in t for t in topics)
-    assert len(topics) == 13  # 9 core (incl. envelope) + 4 battery
+    assert len(topics) == 12  # 8 core (incl. diagnostic envelope) + 4 battery
 
 
 def test_publish_reading_carries_provenance_and_energy(client_with_battery):
@@ -74,30 +75,25 @@ def test_publish_reading_carries_provenance_and_energy(client_with_battery):
     assert payload["floor"] == 2.7 and payload["ceiling"] == 10.0
 
 
-def test_discovery_includes_availability_and_envelope():
+def test_discovery_includes_availability():
     fake = FakeClient()
     c = MQTTClient(has_battery=False, client=fake)
     c._connected = True
     c.publish_discovery()
-    keys = [t.split("/")[-2] for t, _ in fake.published]
-    assert "power_floor" in keys and "power_ceiling" in keys
     power_cfg = [p for t, p in fake.published if t.endswith("/power/config")][0]
     assert power_cfg["availability_topic"] == "powerguess/availability"
     assert power_cfg["payload_not_available"] == "offline"
 
 
-def test_cost_sensor_when_tariff_set():
+def test_no_cost_sensor_even_with_tariff():
+    # Cost/energy are dropped; setting a tariff must not resurrect a cost entity.
     Config.ENERGY_TARIFF = 0.30
-    Config.CURRENCY = "EUR"
     try:
         fake = FakeClient()
         c = MQTTClient(has_battery=False, client=fake)
         c._connected = True
         c.publish_discovery()
-        assert any(t.endswith("/cost/config") for t, _ in fake.published)
-        c.publish_reading(Reading(10, 5, 2, "estimate"), energy_wh=2000, force=True)
-        payload = fake.published[-1][1]
-        assert payload["cost"] == round(2.0 * 0.30, 4)  # 2 kWh * 0.30
+        assert not any(t.endswith("/cost/config") for t, _ in fake.published)
     finally:
         Config.ENERGY_TARIFF = 0.0
 
