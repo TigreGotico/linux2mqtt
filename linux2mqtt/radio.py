@@ -15,11 +15,15 @@ entities — on a host with no radio or tooling (e.g. a wired server).
 
 from __future__ import annotations
 
+import logging
 import re
 import subprocess
+import threading
 import time
 from shutil import which
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
+
+_log = logging.getLogger(__name__)
 
 _UNESCAPED_COLON = re.compile(r"(?<!\\):")
 _BT_DEVICE = re.compile(r"Device\s+([0-9A-Fa-f:]{17})\s+(.*)")
@@ -101,6 +105,7 @@ class RadioMonitor:
         self._last_scan = 0.0
         self._ap_count = 0
         self._bt_count = 0
+        self._scanning = False
 
     @property
     def has_wifi(self) -> bool:
@@ -124,11 +129,36 @@ class RadioMonitor:
         return out
 
     def due(self) -> bool:
-        return (time.time() - self._last_scan) >= self.scan_interval
+        return not self._scanning and (time.time() - self._last_scan) >= self.scan_interval
 
-    def scan(self) -> dict:
-        """Expensive periodic scan. Returns wifi/bt lists + watched presence."""
+    def scan_in_background(self, on_done: Callable[[dict], None]) -> bool:
+        """Run ``scan()`` on a daemon thread so callers (e.g. the telemetry
+        cadence) are never blocked by the up-to-~25s WiFi+BT scan.
+
+        Returns False (no-op) if a scan is already in flight, else True.
+        ``on_done`` is called with the scan result once it completes.
+        """
+        if self._scanning:
+            return False
+        self._scanning = True
         self._last_scan = time.time()
+
+        def _run_scan():
+            try:
+                result = self.scan(_mark_last_scan=False)
+                on_done(result)
+            except Exception:
+                _log.exception("radio scan failed")
+            finally:
+                self._scanning = False
+
+        threading.Thread(target=_run_scan, daemon=True, name="radio-scan").start()
+        return True
+
+    def scan(self, _mark_last_scan: bool = True) -> dict:
+        """Expensive periodic scan. Returns wifi/bt lists + watched presence."""
+        if _mark_last_scan:
+            self._last_scan = time.time()
         out: dict = {}
         if self._has_wifi:
             nets = _wifi_scan()
