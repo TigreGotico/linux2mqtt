@@ -5,6 +5,12 @@ services:
     image: ghcr.io/tigregotico/linux2mqtt:dev
     container_name: linux2mqtt
     restart: unless-stopped
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     # Battery rails and the device model are read from the host. powerstat
     # additionally needs privileged access to the host's RAPL/MSR; drop
     # `privileged` and the /dev/cpu mount to run the CPU-load estimate instead.
