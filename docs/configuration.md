@@ -19,12 +19,12 @@ All settings are environment variables, read once at startup.
 | --- | --- | --- |
 | `CALIBRATION_FILE` | _(none)_ | JSON calibration to load, and where auto-calibration is saved |
 | `CALIBRATION_IDLE_W` / `CALIBRATION_LOAD_W` | _(none)_ | manual idle/peak watts (the bounds) |
-| `CALIBRATION_PSU_W` | _(none)_ | with `CALIBRATION_IDLE_W` but no `LOAD_W`, use the PSU rating as a loose upper bound (see [theory](theory.md)) |
+| `CALIBRATION_PSU_W` | _(none)_ | with `CALIBRATION_IDLE_W` but no `LOAD_W`, use the PSU rating as a loose upper bound |
 | `CALIBRATION_VOLTAGE` | `5.0` | supply voltage for manual calibration |
 | `AUTO_CALIBRATE` | `true` | learn idle/peak from measured readings |
 | `USE_INA219` | `false` | read an INA219 I²C power monitor (needs `[ina219]`) |
 | `INA219_BUS` / `INA219_ADDRESS` / `INA219_SHUNT_OHMS` | `1` / `0x40` / `0.1` | INA219 wiring |
-| `MODEL_FILE` | _(none)_ | trained predictor JSON (see dataset.md) |
+| `MODEL_FILE` | _(none)_ | trained predictor JSON |
 | `DATASET_FILE` | _(none)_ | append measured `features→watts` rows here |
 
 ## MQTT
@@ -57,25 +57,28 @@ All settings are environment variables, read once at startup.
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `ENERGY_FILE` | _(none)_ | persist the cumulative kWh counter here so it survives restarts |
-| `ENERGY_TARIFF` | `0` | price per kWh; when > 0 a cost sensor is published |
+| `ENERGY_TARIFF` | `0` | price per kWh, when > 0 a cost sensor is published |
 | `CURRENCY` | `EUR` | unit for the cost sensor |
 
 ## Components
 
-The CPU and GPU are tracked as their own entities (not as the total).
+The CPU and GPU are tracked as their own entities, not as the total.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `USE_CPU` | `true` | publish CPU utilization/frequency/temperature; plus CPU **package** power via RAPL when `/sys/class/powercap/.../energy_uj` is readable (often root-only) |
+| `USE_CPU` | `true` | publish CPU utilization/frequency/temperature, plus CPU package power via RAPL when `/sys/class/powercap/.../energy_uj` is readable (often root-only) |
 | `USE_GPU` | `true` | publish GPU utilization/temperature/memory (and power, if credible) via `nvidia-smi` |
 | `GPU_INDEX` | `0` | which GPU to read |
-| `USE_RPI` | `true` | Raspberry Pi via `vcgencmd`: PMIC board power (Pi 5) as a measured total source, plus undervoltage/throttling binary sensors — see [raspberry-pi.md](raspberry-pi.md) |
+| `USE_RPI` | `true` | Raspberry Pi via `vcgencmd`: PMIC board power (Pi 5) as a measured total source, plus undervoltage/throttling binary sensors. See [raspberry-pi.md](raspberry-pi.md) |
 
-Note: RAPL measures the CPU package only, so it is a component — not the
-whole-device total. The total comes from INA219 / battery / the estimate.
+Note: RAPL measures the CPU package only, so it is a component, not the
+whole-device total. The total comes from INA219, battery, or the estimate.
 
 ## Logging
 
 | Variable | Default |
 | --- | --- |
 | `LOG_LEVEL` | `INFO` |
+
+---
+[← Raspberry Pi](raspberry-pi.md) · [Home](index.md)
