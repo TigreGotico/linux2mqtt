@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # powerstat (x86 RAPL) and dmidecode are optional power helpers; on a Pi the
 # host's vcgencmd is mounted in (statically linked) — see docs/raspberry-pi.md.
