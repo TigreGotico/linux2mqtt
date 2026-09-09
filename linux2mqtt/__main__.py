@@ -209,7 +209,7 @@ def main() -> None:
                 mqtt_client.publish_media(mpris.read())
             if radio is not None:
                 if radio.due():
-                    mqtt_client.publish_radio_scan(radio.scan())
+                    radio.scan_in_background(mqtt_client.publish_radio_scan)
                 mqtt_client.publish_radio(radio.connected())
         if dataset_fh and reading.measured:
             from powerguess.model import current_features, device_arch

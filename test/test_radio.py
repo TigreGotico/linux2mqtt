@@ -65,4 +65,70 @@ def test_due_initially_true():
     monkeypatch_free = RadioMonitor.__new__(RadioMonitor)
     monkeypatch_free.scan_interval = 300
     monkeypatch_free._last_scan = 0.0
+    monkeypatch_free._scanning = False
     assert monkeypatch_free.due() is True
+
+
+def test_scan_in_background_blocks_due_and_concurrent_scans(monkeypatch):
+    import threading
+
+    started = threading.Event()
+    release = threading.Event()
+
+    monkeypatch.setattr(radio, "_wifi_available", lambda: True)
+    monkeypatch.setattr(radio, "_bt_available", lambda: False)
+
+    def slow_wifi_scan():
+        started.set()
+        release.wait(timeout=5)
+        return [{"bssid": "x"}]
+
+    monkeypatch.setattr(radio, "_wifi_scan", slow_wifi_scan)
+
+    mon = RadioMonitor(scan_interval=0)
+    results = []
+    ok = mon.scan_in_background(results.append)
+    assert ok is True
+
+    assert started.wait(timeout=5), "background scan never started"
+
+    # A scan is in flight: due() must report False, and a second
+    # scan_in_background must be rejected.
+    assert mon.due() is False
+    assert mon.scan_in_background(results.append) is False
+
+    release.set()
+    # Wait for the background thread to finish and clear the flag.
+    for _ in range(50):
+        if not mon._scanning:
+            break
+        threading.Event().wait(0.1)
+
+    assert mon._scanning is False
+    assert len(results) == 1
+    assert results[0]["wifi"] == [{"bssid": "x"}]
+
+
+def test_scan_in_background_exception_clears_flag(monkeypatch):
+    import threading
+
+    monkeypatch.setattr(radio, "_wifi_available", lambda: True)
+    monkeypatch.setattr(radio, "_bt_available", lambda: False)
+
+    def boom():
+        raise RuntimeError("nmcli exploded")
+
+    monkeypatch.setattr(radio, "_wifi_scan", boom)
+
+    mon = RadioMonitor(scan_interval=0)
+    results = []
+    assert mon.scan_in_background(results.append) is True
+
+    for _ in range(50):
+        if not mon._scanning:
+            break
+        threading.Event().wait(0.1)
+
+    assert mon._scanning is False
+    assert results == []          # on_done never called on failure
+    assert mon.due() is True      # flag cleared, monitor recovers
