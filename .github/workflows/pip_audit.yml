@@ -5,6 +5,11 @@ on:
     branches: [dev]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
 jobs:
   pip_audit:
     uses: OpenVoiceOS/gh-automations/.github/workflows/pip-audit.yml@dev

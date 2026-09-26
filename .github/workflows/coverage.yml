@@ -5,6 +5,10 @@ on:
     branches: [dev]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   coverage:
     uses: OpenVoiceOS/gh-automations/.github/workflows/coverage.yml@dev
