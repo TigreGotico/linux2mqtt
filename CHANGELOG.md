@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1a4](https://github.com/TigreGotico/linux2mqtt/tree/0.1.1a4) (2026-09-26)
+
+[Full Changelog](https://github.com/TigreGotico/linux2mqtt/compare/0.1.1a3...0.1.1a4)
+
+**Merged pull requests:**
+
+- ci: pin conventional-release-labels to a commit sha [\#14](https://github.com/TigreGotico/linux2mqtt/pull/14) ([openvoiceos-bot](https://github.com/openvoiceos-bot))
+
 ## [0.1.1a3](https://github.com/TigreGotico/linux2mqtt/tree/0.1.1a3) (2026-09-26)
 
 [Full Changelog](https://github.com/TigreGotico/linux2mqtt/compare/0.1.1a2...0.1.1a3)
